@@ -1,0 +1,63 @@
+[tool.poetry]
+name = "pysyncfstriples"
+version = "0.0.1"
+description = "Library synchronising RDF dump files on disk with an avauilable py-rdf-store"
+authors = ["Marc Portier <marc.portier@vliz.be>"]
+readme = "README.rst"
+packages = [{include = "pysyncfstriples"}]
+license = "MIT"
+
+repository = "git@github.com:vliz-be-opsci/py-sync-fs-triples.git"
+classifiers = [
+    # Trove classifiers
+    # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+]
+
+
+[tool.poetry.dependencies]
+python = "^3.10"
+poetry = "^1.5.0"
+
+# Development tools
+pre-commit = {version = "^3.3.1", optional = true}
+isort = {version = "^5.12.0", optional = true}
+black = {version = "^23.3.0", optional = true}
+flake8 = {version = "^6.0.0", optional = true}
+
+# Testing tools
+pyyaml = {version = "^6.0", optional = true}
+pytest = {version = "^7.3.1", optional = true}
+coverage = {version = "^7.2.5", optional = true}
+python-dotenv = {version = "^1.0.0", optional = true}
+pytest-cov = {version = "^4.1.0", optional = true}
+
+# Documentation tools
+sphinx = {version = "^7.0.1", optional = true}
+
+# Poetry has the dependecies groups, but those are not 
+#   compatible with extras, widely used in the python-verse.
+[tool.poetry.extras]
+dev = ["pre-commit", "isort", "black", "flake8"]
+tests = ["pyyaml","pytest", "coverage", "python-dotenv", "pytest-cov"]
+docs = ["sphinx"]
+
+[tool.poetry.scripts]
+pykg2tbl = "pysyncfstriples.__main__:main"
+
+[build-system]
+requires = ["setuptools","poetry"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 79
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests",]
+pythonpath = ["."]

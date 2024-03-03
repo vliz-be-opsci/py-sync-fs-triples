@@ -1,0 +1,25 @@
+# IDE folder
+.idea/
+.vscode/
+
+# vi backups
+*~
+
+# build results
+dist/
+build/
+_build/
+*.log
+
+# vemnv / Byte-compiled / optimized / DLL files
+.env
+venv/
+__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# python
+.coverage
+.pytest_cache

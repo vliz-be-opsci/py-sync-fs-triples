@@ -7,7 +7,7 @@ readme = "README.rst"
 packages = [{include = "pysyncfstriples"}]
 license = "MIT"
 
-repository = "git@github.com:vliz-be-opsci/py-sync-fs-triples.git"
+repository = "https://github.com/vliz-be-opsci/py-sync-fs-triples.git"
 classifiers = [
     # Trove classifiers
     # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers

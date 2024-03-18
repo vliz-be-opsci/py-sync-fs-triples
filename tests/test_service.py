@@ -1,8 +1,10 @@
-from util4tests import run_single_test
+import os
+import pathlib
+
+import pytest
 from pyrdfstore.store import RDFStore
 from rdflib import Graph
-import pytest
-import os
+from util4tests import run_single_test
 
 
 def test_fname_to_ng():
@@ -43,7 +45,7 @@ def test_ng_to_fname():
 
 
 @pytest.mark.usefixtures("memorystore")
-def test_get_fnames_in_store(memorystore):
+def test_get_fnames_in_store_ttl(memorystore):
     from syncfstriples.service import get_fnames_in_store
 
     # Test case 1: Empty store
@@ -61,6 +63,39 @@ def test_get_fnames_in_store(memorystore):
 
     # Add more test cases as needed
 
+@pytest.mark.usefixtures("memorystore")
+def test_get_fnames_in_store_jsonld(memorystore):
+    from syncfstriples.service import get_fnames_in_store
+
+    # Test case 1: Empty store
+    expected_result = []
+    assert get_fnames_in_store(memorystore) == expected_result
+
+    # Test case 2: Store with one named graph
+    # add a graph to the memorystore
+    to_add_file = os.path.join(os.path.dirname(__file__), "input", "3293.jsonld")
+    memorystore.insert(
+        Graph().parse(to_add_file, format="json-ld"), "urn:sync:3293.jsonld"
+    )
+
+    assert get_fnames_in_store(memorystore) == ["3293.jsonld"]
+
+    # Add more test cases as needed
+
+    
+@pytest.mark.usefixtures("memorystore")
+def test_perform_sync(memorystore):
+    from syncfstriples.service import get_fnames_in_store, perform_sync
+    
+    path_test = pathlib.Path(os.path.dirname(__file__), "input")
+    # list all files with full path
+    file_names = [str(p) for p in path_test.glob("**/*") if p.is_file()]
+    # perform_sync(path_test, memorystore)
+    perform_sync(path_test, memorystore)
+    
+    assert get_fnames_in_store(memorystore) == file_names
+
+    
 
 if __name__ == "__main__":
     run_single_test(__file__)

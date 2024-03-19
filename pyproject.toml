@@ -4,7 +4,7 @@ version = "0.0.1"
 description = "Library synchronising RDF dump files on disk with an avauilable py-rdf-store"
 authors = ["Marc Portier <marc.portier@vliz.be>"]
 readme = "README.rst"
-packages = [{include = "pysyncfstriples"}]
+packages = [{include = "syncfstriples"}]
 license = "MIT"
 
 repository = "git@github.com:vliz-be-opsci/py-sync-fs-triples.git"

@@ -1,20 +1,20 @@
-from pyrdfstore.store import RDFStore
-from pyrdfstore import create_rdf_store
-from pathlib import Path
 from datetime import datetime
 from logging import getLogger
-from rdflib import Graph
-from urllib.parse import unquote, quote
+from pathlib import Path
+from urllib.parse import quote, unquote
 
+from pyrdfstore import create_rdf_store
+from pyrdfstore.store import RDFStore
+from rdflib import Graph
 
 log = getLogger(__name__)
 
 SUFFIX_TO_FORMAT = {
     ".ttl": "turtle",
     ".turtle": "turtle", 
-    ".jsonld": "jsonld",
-    ".json-ld": "jsonld", 
-    ".json": "jsonld",
+    ".jsonld": "json-ld",
+    ".json-ld": "json-ld", 
+    ".json": "json-ld",
 }
 SUPPORTED_RDF_DUMP_SUFFIXES = [sfx for sfx in SUFFIX_TO_FORMAT]
 URN_BASE = "urn:sync"  # TODO consider os.getenv mechanism (or other) to configure this in certain context
@@ -68,19 +68,22 @@ def load_graph(fpath: Path, format: str = None):
 def sync_removal(store: RDFStore, fname: str) -> None:
     ng = fname_to_ng(fname)
     store.drop_graph(ng)
-    store.forget_graph(ng)
+    store.forget_graph(ng) # TODO: discuss with MPO what the meaning of this is
 
 
 def sync_addition(store: RDFStore, fname: str) -> None:
-    ng = fname_to_ng(fname)
-    g = load_graph(fname)
+    ng = fname_to_ng(str(fname))
+    # TODO: discuss with MPO where the fname should be converted to Path 
+    fpath = Path(fname)
+    g = load_graph(fpath)
     store.insert(g, ng)
 
 
-def sync_update(store, fname) -> None:
-    ng = fname_to_ng(fname)
+def sync_update(store, fname:str) -> None:
+    ng = fname_to_ng(str(fname))
     store.drop_graph(ng)
-    g = load_graph(fname)
+    fpath = Path(fname)
+    g = load_graph(fpath)
     store.insert(g, ng)
 
 
@@ -102,7 +105,9 @@ def perform_sync(from_path: Path, to_store: RDFStore):
     for fname, lastmod in current_lastmod_by_fname.items():
         if fname not in known_fnames_in_store:
             log.info(f"new file {fname} with lastmod {lastmod}")
-            sync_addition(to_store, fname)
+            # " fname is a string, but should be a Path instance"
+            fpath = Path(fname)
+            sync_addition(to_store, fpath)
         elif lastmod > to_store.lastmod_ts(fname_to_ng(fname)):
             sync_update(to_store, fname)
 

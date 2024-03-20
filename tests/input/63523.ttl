@@ -1,0 +1,23 @@
+@prefix mr: <http://marineregions.org/ns/ontology#> .
+@prefix mrt: <http://marineregions.org/ns/placetypes#> .
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix gsp: <http://www.opengis.net/ont/geosparql#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://marineregions.org/mrgid/63523>
+  a mr:MRGeoObject, mrt:SamplingStation ;
+  mr:isPartOf <http://marineregions.org/mrgid/17595> ;
+  dc:modified "2023-11-28T10:02:22Z"^^xsd:dateTime ;
+  skos:prefLabel "BENTHOBS Boyardville"@en ;
+  dcat:centroid "<http://www.opengis.net/def/crs/OGC/1.3/CRS84> POINT (-1.2146 45.57755)"^^gsp:wktLiteral ;
+  prov:hadPrimarySource [ prov:wasAttributedTo <https://www.ir-ilico.fr/> ] .
+
+<http://marineregions.org/mrgid/17595>
+  a mr:MRGeoObject, mrt:Estuary ;
+  skos:prefLabel "Gironde Estuary"@en .
+
+<https://www.ir-ilico.fr/> rdfs:label "ILICO SNO Sampling Points"^^xsd:string .

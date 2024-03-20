@@ -24,8 +24,6 @@ init: startup
 
 init-dev: startup
 	poetry install --extras 'tests' --extras 'dev' --extras 'docs'
-	poetry run pre-commit install
-	poetry run pre-commit install --hook-type commit-msg
 
 init-docs: startup
 	poetry install --extras 'docs'

@@ -3,10 +3,9 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 import pytest
+from pyrdfstore import RDFStore, create_rdf_store
 from rdflib import BNode, Graph, URIRef
 from util4tests import enable_test_logging, log
-
-from pyrdfstore import RDFStore, create_rdf_store
 
 TEST_INPUT_FOLDER = Path(__file__).parent / "./input"
 TEST_SYNC_FOLDER = Path(__file__).parent / "./__sync__"

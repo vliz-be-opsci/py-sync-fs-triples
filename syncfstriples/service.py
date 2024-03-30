@@ -1,4 +1,5 @@
-from datetime import datetime, UTC_tz
+from datetime import UTC as UTC_tz
+from datetime import datetime
 from logging import getLogger
 from pathlib import Path
 from urllib.parse import quote, unquote
@@ -119,12 +120,18 @@ class SyncFsTriples:
     """Process-wrapper-pattern for easy inclusion in other contexts."""
 
     def __init__(
-        self, fpath: str, read_uri: str = None, write_uri: str = None
+        self,
+        fpath: str,
+        named_graph_base: str = URN_BASE,
+        read_uri: str = None,
+        write_uri: str = None,
     ):
         """Creates the process-wrapper instance
 
         :param fpath: path to te folder to check for nested rdf dump files to be synced up.
         :type fpath: str
+        :param named_graph_base: the base to be used for building named_graphs in the conversion
+        :type named_graph_base: str
         :param read_uri: uri to the triple-store to sync to (defaults to None - leading to using an in-MemoryStore)
         :type read_uri: str
         :param write_uri: uri for write operations to the triple store (defaults to None - leading to a store that can only be read from)

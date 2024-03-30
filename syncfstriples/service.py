@@ -1,27 +1,27 @@
-from pyrdfstore.store import RDFStore
-from pyrdfstore import create_rdf_store
-from pathlib import Path
 from datetime import datetime
 from logging import getLogger
-from rdflib import Graph
-from urllib.parse import unquote, quote
+from pathlib import Path
+from urllib.parse import quote, unquote
 
+from pyrdfstore import create_rdf_store
+from pyrdfstore.store import RDFStore
+from rdflib import Graph
 
 log = getLogger(__name__)
 
 SUFFIX_TO_FORMAT = {
     ".ttl": "turtle",
-    ".turtle": "turtle", 
-    ".jsonld": "jsonld",
-    ".json-ld": "jsonld", 
-    ".json": "jsonld",
+    ".turtle": "turtle",
+    ".jsonld": "json-ld",
+    ".json-ld": "json-ld",
+    ".json": "json-ld",
 }
 SUPPORTED_RDF_DUMP_SUFFIXES = [sfx for sfx in SUFFIX_TO_FORMAT]
 URN_BASE = "urn:sync"  # TODO consider os.getenv mechanism (or other) to configure this in certain context
 
 
 def fname_to_ng(fname: str) -> str:
-    """ converts local filename to a named_graph
+    """converts local filename to a named_graph
     :param fname: local file-name
     :type fname: str
     :returns: urn representing the filename to be used as named-graph
@@ -32,18 +32,22 @@ def fname_to_ng(fname: str) -> str:
 
 # todo make roundtrip tests for ng_to_fname and fname_to_ng
 def ng_to_fname(ng: str) -> str:
-    """ converts named_graph urn back into local filename
+    """converts named_graph urn back into local filename
     :param fname: local file-name
     :type fname: str
     :returns: urn representing the filename to be used as named-graph
     :retype: str
     """
-    assert ng.startswith(URN_BASE), f"Unknown {ng=}. It should start with {URN_BASE=}"
-    return unquote(ng[len(URN_BASE) + 1:])
+    assert ng.startswith(
+        URN_BASE
+    ), f"Unknown {ng=}. It should start with {URN_BASE=}"
+    return unquote(ng[(len(URN_BASE) + 1) :])
 
 
 def get_fnames_in_store(store: RDFStore):
-    return [ng_to_fname(ng) for ng in store.named_graphs if ng.startswith(URN_BASE)]  # filter and convert to names we handle
+    return [
+        ng_to_fname(ng) for ng in store.named_graphs if ng.startswith(URN_BASE)
+    ]  # filter and convert to names we handle
 
 
 def get_lastmod_by_fname(from_path: Path):
@@ -85,7 +89,7 @@ def sync_update(store, fname) -> None:
 
 
 def perform_sync(from_path: Path, to_store: RDFStore):
-    """ synchronizes found rdf-dump files in the from_path to the RDFStore specified
+    """synchronizes found rdf-dump files in the from_path to the RDFStore specified
 
     :param from_path: folder path to sync from
     :type from_path: Path
@@ -107,11 +111,12 @@ def perform_sync(from_path: Path, to_store: RDFStore):
             sync_update(to_store, fname)
 
 
-class SyncFsTriples():
-    """Process-wrapper-pattern for easy inclusion in other contexts. 
-    """
+class SyncFsTriples:
+    """Process-wrapper-pattern for easy inclusion in other contexts."""
 
-    def __init__(self, fpath: str, read_uri: str = None, write_uri: str = None): 
+    def __init__(
+        self, fpath: str, read_uri: str = None, write_uri: str = None
+    ):
         """Creates the process-wrapper instance
 
         :param fpath: path to te folder to check for nested rdf dump files to be synced up.
@@ -122,11 +127,14 @@ class SyncFsTriples():
         :type write_uri: str
         """
         self.source_path: Path = Path(fpath)
-        assert self.source_path.exists(), f"cannot sync a source-path { fpath } that does not exist."
-        assert self.source_path.is_dir(), f"source-path { fpath } should be a folder."
+        assert (
+            self.source_path.exists()
+        ), f"cannot sync a source-path { fpath } that does not exist."
+        assert (
+            self.source_path.is_dir()
+        ), f"source-path { fpath } should be a folder."
         self.rdfstore: RDFStore = create_rdf_store(read_uri, write_uri)
 
     def process(self) -> None:
-        """executes the SyncFs command
-        """
+        """executes the SyncFs command"""
         perform_sync(from_path=self.source_path, to_store=self.rdfstore)

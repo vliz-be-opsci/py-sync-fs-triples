@@ -44,14 +44,11 @@ test-coverage:
 check:
 	poetry run black --check --diff .
 	poetry run isort --check --diff .
-	poetry run flake8 . --exclude ${FLAKE8_EXCLUDE}
+	poetry run flake8 . --exclude ${FLAKE8_EXCLUDE} --ignore=E501,E201,E203,E202,W503
 
 lint-fix:
 	poetry run black .
 	poetry run isort .
-
-docker-build:
-	docker build . -t syncfstriples
 
 update:
 	poetry update

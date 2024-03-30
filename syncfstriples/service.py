@@ -199,20 +199,28 @@ def perform_sync(
     :type nmapper: GraphFileNameMapper
     :rtype: None
     """
-    known_fnames_in_store = nmapper.get_fnames_in_store(to_store)
+    known_relnames_in_store = nmapper.get_fnames_in_store(to_store)
     current_lastmod_by_fname = get_lastmod_by_fname(from_path)
     log.debug(f"current_lastmod_by_fname: {current_lastmod_by_fname}")
-    for fname in known_fnames_in_store:
+    for relname in known_relnames_in_store:
+        fname = str(from_path / relname)
         if fname not in current_lastmod_by_fname:
             log.debug(f"old file {fname} no longer exists")
             sync_removal(to_store, Path(fname), from_path, nmapper)
     for fname, lastmod in current_lastmod_by_fname.items():
-        if fname not in known_fnames_in_store:
+        relname = relative_pathname(Path(fname), from_path)
+        if relname not in known_relnames_in_store:
             log.debug(f"new file {fname} with lastmod {lastmod}")
             sync_addition(to_store, Path(fname), from_path, nmapper)
-        elif lastmod > to_store.lastmod_ts(nmapper.fname_to_ng(fname)):
-            log.debug(f"updated file {fname} with lastmod {lastmod}")
-            sync_update(to_store, Path(fname), from_path, nmapper)
+        else:
+            known_lastmod = to_store.lastmod_ts(nmapper.fname_to_ng(relname)).astimezone(UTC_tz)
+            log.debug(f"known file - comparing file {lastmod} to stored {known_lastmod}")
+            if lastmod >= known_lastmod:
+                log.debug(f"updated file {fname} with lastmod {lastmod}")
+                sync_update(to_store, Path(fname), from_path, nmapper)
+            else:
+                log.debug(f"skip file {fname} with lastmod {lastmod} - unchanged")
+
 
 
 class SyncFsTriples:

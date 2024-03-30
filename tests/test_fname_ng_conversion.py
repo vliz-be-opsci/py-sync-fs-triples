@@ -12,7 +12,6 @@ from util4tests import log, run_single_test
 
 from syncfstriples.service import (
     GraphFileNameMapper,
-    relative_pathname,
     sync_addition,
 )
 

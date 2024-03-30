@@ -1,9 +1,13 @@
 TEST_PATH = ./tests/
 FLAKE8_EXCLUDE = venv,.venv,.eggs,.tox,.git,__pycache__,*.pyc
 PROJECT = syncfstriples
-AUTHOR = Marc Portier
+AUTHOR = "Flanders Marine Institute, VLIZ vzw"
 
-.PHONY: build docs clean install docker-build
+.PHONY: help build check help init-dev init install lint-fix release startup test-coverage test update
+.DEFAULT_GOAL := help
+
+help:  ## Shows this list of available targets and their effect.
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 clean:
 	@find . -name '*.pyc' -exec rm --force {} +
@@ -15,47 +19,38 @@ clean:
 	@rm -f *.sqlite
 	@rm -rf .cache
 
-startup:
-	pip install --upgrade pip
-	which poetry >/dev/null || pip install poetry
+startup: ## prepares environment for using poetry (a core dependency for this project)
+	@pip install --upgrade pip
+	@which poetry >/dev/null || pip install poetry
 
-init: startup
-	poetry install
+install:  ## install this package in the current environment
+	@poetry install
 
-init-dev: startup
-	poetry install --extras 'tests' --extras 'dev' --extras 'docs'
-	poetry run pre-commit install
-	poetry run pre-commit install --hook-type commit-msg
+init: startup install  ## initial prepare of the environment for local execution of the package
 
-init-docs: startup
-	poetry install --extras 'docs'
+init-dev: startup  ## initial prepare of the environment for further development in the package
+	@poetry install --with 'tests' --with 'dev' --with 'docs'
 
-docs:
-	if ! [ -d "./docs" ]; then poetry run sphinx-quickstart -q --ext-autodoc --sep --project $(PROJECT) --author $(AUTHOR) docs; fi
-	poetry run sphinx-apidoc -f -o ./docs/source ./$(PROJECT)
-	poetry run sphinx-build -E -a -b html ./docs/source ./docs/build/html
+test:  ## runs the standard test-suite for the memory-graph implementation
+	@poetry run pytest ${TEST_PATH}
 
-test:
-	poetry run pytest ${TEST_PATH}
+test-coverage:  ## runs the standard test-suite for the memory-graph implementation and produces a coverage report
+	@poetry run pytest --cov=$(PROJECT) ${TEST_PATH} --cov-report term-missing
 
-test-coverage:
-	poetry run pytest --cov=$(PROJECT) ${TEST_PATH} --cov-report term-missing
+check:  ## performs linting on the python code
+	@poetry run black --check --diff .
+	@poetry run isort --check --diff .
+	@poetry run flake8 . --exclude ${FLAKE8_EXCLUDE} --ignore=E501,E201,E203,E202,W503
 
-check:
-	poetry run black --check --diff .
-	poetry run isort --check --diff .
-	poetry run flake8 . --exclude ${FLAKE8_EXCLUDE} --ignore=E501,E201,E203,E202,W503
+lint-fix:  ## fixes code according to the lint suggestions
+	@poetry run black .
+	@poetry run isort .
 
-lint-fix:
-	poetry run black .
-	poetry run isort .
+update:  ## updates dependencies
+	@poetry update
 
-update:
-	poetry update
-	poetry run pre-commit autoupdate
+build: update check test docs  ## builds the package
+	@poetry build
 
-build: update check test docs
-	poetry build
-
-release: build
-	poetry release
+release: build  ## releases the package
+	@poetry release

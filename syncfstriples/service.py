@@ -52,7 +52,7 @@ class GraphFileNameMapper:
         :rtype: str
         """
         assert ng.startswith(self._base), (
-            f"Unknown {ng=}. It should start with {self._base=}"
+            f"Unknown {ng=}. " f"It should start with {self._base=}"
         )
         return unquote(ng[len(self._base) :])
 
@@ -201,16 +201,17 @@ def perform_sync(
     """
     known_fnames_in_store = nmapper.get_fnames_in_store(to_store)
     current_lastmod_by_fname = get_lastmod_by_fname(from_path)
-    log.info(f"current_lastmod_by_fname: {current_lastmod_by_fname}")
+    log.debug(f"current_lastmod_by_fname: {current_lastmod_by_fname}")
     for fname in known_fnames_in_store:
         if fname not in current_lastmod_by_fname:
-            log.info(f"old file {fname} no longer exists")
+            log.debug(f"old file {fname} no longer exists")
             sync_removal(to_store, Path(fname), from_path, nmapper)
     for fname, lastmod in current_lastmod_by_fname.items():
         if fname not in known_fnames_in_store:
-            log.info(f"new file {fname} with lastmod {lastmod}")
+            log.debug(f"new file {fname} with lastmod {lastmod}")
             sync_addition(to_store, Path(fname), from_path, nmapper)
         elif lastmod > to_store.lastmod_ts(nmapper.fname_to_ng(fname)):
+            log.debug(f"updated file {fname} with lastmod {lastmod}")
             sync_update(to_store, Path(fname), from_path, nmapper)
 
 

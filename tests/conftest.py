@@ -94,11 +94,16 @@ def make_sample_graph(
     return g
 
 
-@pytest.fixture(
-    scope="function"
-)  # make sure we get a fresh folder for each run
-def syncfolder():
-    syncPath = TEST_SYNC_FOLDER
-    shutil.rmtree(str(syncPath), ignore_errors=True)  # force remove it
-    syncPath.mkdir(parents=True, exist_ok=True)  # create it afresh
-    return syncPath
+@pytest.fixture(scope="function")  # a fresh folder per store for each test
+def syncfolders(rdf_stores) -> Iterable[Path]:
+    mainpath = TEST_SYNC_FOLDER
+    syncpathperstore = list()
+    for rdf_store in rdf_stores:
+        rdf_store_type: str = type(rdf_store).__name__
+        num = len(syncpathperstore) + 1
+        syncpathname: str = f"sync-{num:02d}-{rdf_store_type}"
+        syncpath: Path = mainpath / syncpathname
+        shutil.rmtree(str(syncpath), ignore_errors=True)  # force remove it
+        syncpath.mkdir(parents=True, exist_ok=True)  # create it afresh
+        syncpathperstore.append(syncpath)
+    return syncpathperstore

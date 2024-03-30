@@ -11,6 +11,10 @@ build/
 _build/
 *.log
 
+# temp testing stuff
+tests/__sync__
+
+
 # vemnv / Byte-compiled / optimized / DLL files
 .env
 venv/

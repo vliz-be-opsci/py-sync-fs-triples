@@ -41,7 +41,7 @@ def ng_to_fname(ng: str) -> str:
     assert ng.startswith(
         URN_BASE
     ), f"Unknown {ng=}. It should start with {URN_BASE=}"
-    return unquote(ng[(len(URN_BASE) + 1) :])
+    return unquote(ng[len(URN_BASE) + 1 :])
 
 
 def get_fnames_in_store(store: RDFStore):

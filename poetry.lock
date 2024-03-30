@@ -1401,8 +1401,8 @@ validators = "^0.22.0"
 [package.source]
 type = "git"
 url = "https://github.com/vliz-be-opsci/py-RDF-store.git"
-reference = "feature/support-sync"
-resolved_reference = "0bdcc25b2910bfa1ab5a8d3d6c42d5ba08224126"
+reference = "main"
+resolved_reference = "2c4cbf5725ab15a3ca332701716d65f0ede6893b"
 
 [[package]]
 name = "pytest"
@@ -2154,4 +2154,4 @@ tests = ["pyyaml", "pytest", "coverage", "python-dotenv", "pytest-cov"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "4a1ee313b95592542225b190cdf2f08581d61a542dd2d24158ccbb0281cf3209"
+content-hash = "28ce9e8df7051e53bc4b6297c6e8f4c764e0a8df731d134d6c648e67c76a98f6"

@@ -19,9 +19,11 @@ from syncfstriples.service import (
 
 @pytest.mark.usefixtures("rdf_stores", "syncfolders")
 def test_perform_sync(rdf_stores, syncfolders):
-    base = f"urn:test-sync:{uuid4()}"
+    base = f"urn:test-sync:{uuid4()}:"
     nmapper: GraphFileNameMapper = GraphFileNameMapper(base)
-    inbase = lambda ng: ng.startswith(base)
+
+    def inbase(ng):
+        return ng.startswith(base)
 
     # there should at least be 2 for the logic of the test to hold
     extensions = ["ttl", "jsonld", "turtle", "json"]

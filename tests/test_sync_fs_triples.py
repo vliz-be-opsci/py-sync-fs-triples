@@ -17,7 +17,9 @@ from syncfstriples import SyncFsTriples
 def test_service_wrapper(rdf_stores, syncfolders):
     base = "urn:sync:via-wrapper:"
     log.debug(f"{base=}")
-    inbase = lambda ng: ng.startswith(base)
+
+    def inbase(ng):
+        return ng.startswith(base)
 
     for rdf_store, syncpath in zip(rdf_stores, syncfolders):
         read_uri, write_uri = None, None
@@ -41,6 +43,8 @@ def test_service_wrapper(rdf_stores, syncfolders):
         file_set = set(TEST_INPUT_FOLDER.glob("**/*"))
         sft.process()
         ng_set = set(filter(inbase, rdf_store.named_graphs))
+        log.debug(f"{set(rdf_store.named_graphs)=}")
+        log.debug(f"{ng_set=}")
         assert len(ng_set) == len(file_set)
 
 

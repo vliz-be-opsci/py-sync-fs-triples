@@ -232,15 +232,15 @@ class SyncFsTriples:
 
     def __init__(
         self,
-        fpath: str,
+        root: str,
         named_graph_base: str = DEFAULT_URN_BASE,
         read_uri: str = None,
         write_uri: str = None,
     ):
         """Creates the process-wrapper instance
 
-        :param fpath: path to te folder to check for nested rdf dump files to be synced up.
-        :type fpath: str
+        :param root: path to te folder to check for nested rdf dump files to be synced up.
+        :type root: str
         :param named_graph_base: the base to be used for building named_graphs in the conversion
             optional - defaults to DEFAULT_URN_BASE = "urn:sync:"
         :type named_graph_base: str
@@ -251,12 +251,12 @@ class SyncFsTriples:
             optional - defaults to None - leading to a store that can only be read from
         :type write_uri: str
         """
-        self.source_path: Path = Path(fpath)
+        self.source_path: Path = Path(root)
         assert self.source_path.exists(), (
-            "cannot sync a source-path " + str(fpath) + " that does not exist."
+            "cannot sync a source-path " + str(root) + " that does not exist."
         )
         assert self.source_path.is_dir(), (
-            "source-path " + str(fpath) + " should be a folder."
+            "source-path " + str(root) + " should be a folder."
         )
         self.nmapper = GraphFileNameMapper(base=named_graph_base)
         self.rdfstore: RDFStore = create_rdf_store(read_uri, write_uri)

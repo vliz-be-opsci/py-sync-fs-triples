@@ -10,10 +10,7 @@ from conftest import TEST_FOLDER
 from pyrdfstore import RDFStore
 from util4tests import log, run_single_test
 
-from syncfstriples.service import (
-    GraphFileNameMapper,
-    sync_addition,
-)
+from syncfstriples.service import GraphFileNameMapper, sync_addition
 
 
 def test_fname_to_ng():

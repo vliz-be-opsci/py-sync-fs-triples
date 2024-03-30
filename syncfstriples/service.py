@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC_tz
 from logging import getLogger
 from pathlib import Path
 from urllib.parse import quote, unquote
@@ -47,12 +47,12 @@ def ng_to_fname(ng: str) -> str:
 def get_fnames_in_store(store: RDFStore):
     return [
         ng_to_fname(ng) for ng in store.named_graphs if ng.startswith(URN_BASE)
-    ]  # filter and convert to names we handle
+    ]  # filter and convert the named_graphs to file_names we handle
 
 
 def get_lastmod_by_fname(from_path: Path):
     return {
-        str(p): datetime.utcfromtimestamp(p.stat().st_mtime)
+        str(p): datetime.fromtimestamp(p.stat().st_mtime, UTC_tz)
         for p in from_path.glob("**/*")
         if p.is_file() and p.suffix in SUPPORTED_RDF_DUMP_SUFFIXES
     }
@@ -63,10 +63,14 @@ def format_from_filepath(fpath: Path):
     return SUFFIX_TO_FORMAT.get(suffix, None)
 
 
-def load_graph(fpath: Path, format: str = None):
+def load_graph_fpath(fpath: Path, format: str = None):
     format = format or format_from_filepath(fpath)
     graph: Graph = Graph().parse(location=str(fpath), format=format)
     return graph
+
+
+def load_graph_fname(fname: str, format: str = None):
+    return load_graph_fpath(Path(fname), format)
 
 
 def sync_removal(store: RDFStore, fname: str) -> None:
@@ -77,14 +81,14 @@ def sync_removal(store: RDFStore, fname: str) -> None:
 
 def sync_addition(store: RDFStore, fname: str) -> None:
     ng = fname_to_ng(fname)
-    g = load_graph(fname)
+    g = load_graph_fname(fname)
     store.insert(g, ng)
 
 
-def sync_update(store, fname) -> None:
+def sync_update(store: RDFStore, fname: str) -> None:
     ng = fname_to_ng(fname)
     store.drop_graph(ng)
-    g = load_graph(fname)
+    g = load_graph_fname(fname)
     store.insert(g, ng)
 
 

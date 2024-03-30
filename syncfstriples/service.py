@@ -213,14 +213,18 @@ def perform_sync(
             log.debug(f"new file {fname} with lastmod {lastmod}")
             sync_addition(to_store, Path(fname), from_path, nmapper)
         else:
-            known_lastmod = to_store.lastmod_ts(nmapper.fname_to_ng(relname)).astimezone(UTC_tz)
-            log.debug(f"known file - comparing file {lastmod} to stored {known_lastmod}")
+            ng = nmapper.fname_to_ng(relname)
+            known_lastmod = to_store.lastmod_ts(ng).astimezone(UTC_tz)
+            log.debug(
+                f"known file {relname} - check file {lastmod} >= {known_lastmod}"
+            )
             if lastmod >= known_lastmod:
                 log.debug(f"updated file {fname} with lastmod {lastmod}")
                 sync_update(to_store, Path(fname), from_path, nmapper)
             else:
-                log.debug(f"skip file {fname} with lastmod {lastmod} - unchanged")
-
+                log.debug(
+                    f"skip file {fname} with lastmod {lastmod} - unchanged"
+                )
 
 
 class SyncFsTriples:

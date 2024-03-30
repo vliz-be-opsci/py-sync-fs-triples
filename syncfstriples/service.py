@@ -2,8 +2,8 @@ from datetime import UTC as UTC_tz
 from datetime import datetime
 from logging import getLogger
 from pathlib import Path
+from typing import Dict, Iterable
 from urllib.parse import quote, unquote
-from typing import Iterable, Dict
 
 from pyrdfstore import create_rdf_store
 from pyrdfstore.store import RDFStore
@@ -22,8 +22,9 @@ SUPPORTED_RDF_DUMP_SUFFIXES = [sfx for sfx in SUFFIX_TO_FORMAT]
 DEFAULT_URN_BASE = "urn:sync:"
 
 
-class GraphFileNameMapper():
+class GraphFileNameMapper:
     """Helper class to convert filenames into graph-names."""
+
     def __init__(self, base: str = DEFAULT_URN_BASE) -> None:
         """constructor
 
@@ -50,20 +51,24 @@ class GraphFileNameMapper():
         :returns: urn representing the filename to be used as named-graph
         :rtype: str
         """
-        assert ng.startswith(self._base), f"Unknown {ng=}. It should start with {self._base=}"
+        assert ng.startswith(self._base), (
+            f"Unknown {ng=}. It should start with {self._base=}"
+        )
         return unquote(ng[len(self._base) :])
 
     def get_fnames_in_store(self, store: RDFStore) -> Iterable[str]:
-        """selects those named graphs in the store.named_graphs under our base 
+        """selects those named graphs in the store.named_graphs under our base
         and converts them into filenames
 
         :param store: the store to grab & filter the named_graphs from
         :type store: RDFStore
-        :returns: list of filenames in that store, based on the found 
+        :returns: list of filenames in that store, based on the found
         :rtype: List[str]
         """
         return [
-            self.ng_to_fname(ng) for ng in store.named_graphs if ng.startswith(self._base)
+            self.ng_to_fname(ng)
+            for ng in store.named_graphs
+            if ng.startswith(self._base)
         ]  # filter and convert the named_graphs to file_names we handle
 
 
@@ -109,75 +114,81 @@ def load_graph_fpath(fpath: Path, format: str = None) -> Graph:
     return graph
 
 
-def load_graph_fname(fname: str, format: str = None):
-    """loads content of file at fname into a graph
-    :param fname: path-filename of file to load
-    :type fname: str
-    :param format: rdflib format to apply when parsing the file
-        optional - if left None, autodetected base on file-extension
-    :type format: str
-    :returns: the graph containing the triples from the file
-    :rtype: Graph
-    """
-    return load_graph_fpath(Path(fname), format)
+def relative_pathname(subpath: Path, ancestorpath: Path) -> str:
+    """gives the relative part pointing to the subpath from the ancestorpath"""
+    return str(subpath.absolute().relative_to(ancestorpath.absolute()))
 
 
-def sync_removal(store: RDFStore, fname: str, nmapper: GraphFileNameMapper) -> None:
+def sync_removal(
+    store: RDFStore, fpath: Path, rootpath: Path, nmapper: GraphFileNameMapper
+) -> None:
     """Handles removal event triggered when file on disk got removed.
     (i.e. has a matching graph in store, but no longer exists).
     Resolution should ensure removal of the matching graph in the store
 
     :param store: target store where removal should happen
     :type store: RDFStore
-    :param fname: file-path-name of file that no longer exists
-    :type fname: str
+    :param fpath: file-path of file that no longer exists
+    :type fpath: Path
+    :param rootpath: root containing the sub fpath
+    :type rootpath: Path
     :param nmapper: convertor between fnames and graphnames to be used
     :type nmapper: GraphFileNameMapper
     :rtype: None
     """
-    ng = nmapper.fname_to_ng(fname)
+    ng = nmapper.fname_to_ng(relative_pathname(fpath, rootpath))
     store.drop_graph(ng)
     store.forget_graph(ng)
 
 
-def sync_addition(store: RDFStore, fname: str, nmapper: GraphFileNameMapper) -> None:
+def sync_addition(
+    store: RDFStore, fpath: Path, rootpath: Path, nmapper: GraphFileNameMapper
+) -> None:
     """Handles addition event triggered when a new file on disk appeared.
     (i.e. has not yet a matching graph in store).
     Resolution should ensure addition of the matching graph in the store
 
     :param store: target store where addition should happen
     :type store: RDFStore
-    :param fname: file-path-name of file that was added
-    :type fname: str
+    :param fpath: file-path of file that was added
+    :type fpath: Path
+    :param rootpath: root containing the sub fpath
+    :type rootpath: Path
     :param nmapper: convertor between fnames and graphnames to be used
     :type nmapper: GraphFileNameMapper
     :rtype: None
     """
-    ng = nmapper.fname_to_ng(fname)
-    g = load_graph_fname(fname)
+    ng = nmapper.fname_to_ng(relative_pathname(fpath, rootpath))
+    g = load_graph_fpath(fpath)
     store.insert(g, ng)
 
 
-def sync_update(store: RDFStore, fname: str, nmapper: GraphFileNameMapper) -> None:
-    """Handles update event triggered when a file on disk was changed 
+def sync_update(
+    store: RDFStore, fpath: Path, rootpath: Path, nmapper: GraphFileNameMapper
+) -> None:
+    """Handles update event triggered when a file on disk was changed
     (i.e. has a more recent lastmod then matching graph in store).
     Resolution should ensure addition of the matching graph in the store
 
     :param store: target store where update should happen
     :type store: RDFStore
-    :param fname: file-path-name of file that was updated
-    :type fname: str
+    :param fpath: file-pathname of file that was updated
+    :type fpath: Path
+    :param rootpath: root containing the sub fpath
+    :type rootpath: Path
     :param nmapper: convertor between fnames and graphnames to be used
     :type nmapper: GraphFileNameMapper
     :rtype: None
     """
-    ng = nmapper.fname_to_ng(fname)
+    ng = nmapper.fname_to_ng(relative_pathname(fpath, rootpath))
     store.drop_graph(ng)
-    g = load_graph_fname(fname)
+    g = load_graph_fpath(fpath)
     store.insert(g, ng)
 
 
-def perform_sync(from_path: Path, to_store: RDFStore, nmapper: GraphFileNameMapper) -> None:
+def perform_sync(
+    from_path: Path, to_store: RDFStore, nmapper: GraphFileNameMapper
+) -> None:
     """synchronizes found rdf-dump files in the from_path to the RDFStore specified
 
     :param from_path: folder path to sync from
@@ -194,13 +205,13 @@ def perform_sync(from_path: Path, to_store: RDFStore, nmapper: GraphFileNameMapp
     for fname in known_fnames_in_store:
         if fname not in current_lastmod_by_fname:
             log.info(f"old file {fname} no longer exists")
-            sync_removal(to_store, fname, nmapper)
+            sync_removal(to_store, Path(fname), from_path, nmapper)
     for fname, lastmod in current_lastmod_by_fname.items():
         if fname not in known_fnames_in_store:
             log.info(f"new file {fname} with lastmod {lastmod}")
-            sync_addition(to_store, fname, nmapper)
+            sync_addition(to_store, Path(fname), from_path, nmapper)
         elif lastmod > to_store.lastmod_ts(nmapper.fname_to_ng(fname)):
-            sync_update(to_store, fname, nmapper)
+            sync_update(to_store, Path(fname), from_path, nmapper)
 
 
 class SyncFsTriples:
@@ -230,7 +241,7 @@ class SyncFsTriples:
         self.source_path: Path = Path(fpath)
         assert self.source_path.exists(), (
             "cannot sync a source-path " + str(fpath) + " that does not exist."
-        ) 
+        )
         assert self.source_path.is_dir(), (
             "source-path " + str(fpath) + " should be a folder."
         )
@@ -239,4 +250,8 @@ class SyncFsTriples:
 
     def process(self) -> None:
         """executes the SyncFs command"""
-        perform_sync(from_path=self.source_path, to_store=self.rdfstore, nmapper=self.nmapper)
+        perform_sync(
+            from_path=self.source_path,
+            to_store=self.rdfstore,
+            nmapper=self.nmapper,
+        )

@@ -2,9 +2,19 @@
 """ test_fname_ng_conversion
 tests our expectations on translating filenames to named_graphs and back
 """
-from util4tests import run_single_test
+from typing import Iterable
+from uuid import uuid4
 
-from syncfstriples.service import GraphFileNameMapper
+import pytest
+from conftest import TEST_FOLDER
+from pyrdfstore import RDFStore
+from util4tests import log, run_single_test
+
+from syncfstriples.service import (
+    GraphFileNameMapper,
+    relative_pathname,
+    sync_addition,
+)
 
 
 def test_fname_to_ng():
@@ -42,6 +52,26 @@ def test_ng_to_fname():
     assert nmapper.ng_to_fname(ng) == expected_fname
 
     # Add more test cases as needed
+
+
+@pytest.mark.usefixtures("rdf_stores")
+def test_get_fnames_in_store(rdf_stores: Iterable[RDFStore]):
+    base: str = "urn:sync:" + str(uuid4())
+    nmapper = GraphFileNameMapper(base)
+
+    for rdf_store in rdf_stores:
+        rdf_store_type: str = type(rdf_store).__name__
+        # Test case 1: Empty store
+        assert nmapper.get_fnames_in_store(rdf_store) == []
+
+        # Test case 2: Store with one named graph
+        relative = "input/63523.ttl"
+        sync_addition(rdf_store, TEST_FOLDER / relative, TEST_FOLDER, nmapper)
+        fnames_in_store: Iterable[str] = nmapper.get_fnames_in_store(rdf_store)
+        assert fnames_in_store == [relative]
+        log.debug(f"{rdf_store_type} :: {fnames_in_store=}")
+
+        # Add more test cases as needed
 
 
 if __name__ == "__main__":

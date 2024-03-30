@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -7,8 +8,9 @@ from pyrdfstore import RDFStore, create_rdf_store
 from rdflib import BNode, Graph, URIRef
 from util4tests import enable_test_logging, log
 
-TEST_INPUT_FOLDER = Path(__file__).parent / "./input"
-TEST_SYNC_FOLDER = Path(__file__).parent / "./__sync__"
+TEST_FOLDER = Path(__file__).parent
+TEST_INPUT_FOLDER = TEST_FOLDER / "input"
+TEST_SYNC_FOLDER = TEST_FOLDER / "__sync__"
 
 
 enable_test_logging()  # note that this includes loading .env into os.getenv
@@ -90,3 +92,13 @@ def make_sample_graph(
         )
         g.add(triple)
     return g
+
+
+@pytest.fixture(
+    scope="function"
+)  # make sure we get a fresh folder for each run
+def syncfolder():
+    syncPath = TEST_SYNC_FOLDER
+    shutil.rmtree(str(syncPath), ignore_errors=True)  # force remove it
+    syncPath.mkdir(parents=True, exist_ok=True)  # create it afresh
+    return syncPath

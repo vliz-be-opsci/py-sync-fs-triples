@@ -1,5 +1,4 @@
-from datetime import UTC as UTC_tz
-from datetime import datetime
+from datetime import datetime, timezone
 from logging import getLogger
 from pathlib import Path
 from typing import Dict, Iterable
@@ -11,6 +10,7 @@ from rdflib import Graph
 
 log = getLogger(__name__)
 
+UTC_tz = timezone.utc
 SUFFIX_TO_FORMAT = {
     ".ttl": "turtle",
     ".turtle": "turtle",

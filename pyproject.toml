@@ -1,13 +1,13 @@
 [tool.poetry]
-name = "pysyncfstriples"
+name = "syncfstriples"
 version = "0.0.1"
 description = "Library synchronising RDF dump files on disk with an avauilable py-rdf-store"
 authors = ["Marc Portier <marc.portier@vliz.be>"]
 readme = "README.rst"
-packages = [{include = "pysyncfstriples"}]
+packages = [{include = "syncfstriples"}]
 license = "MIT"
 
-repository = "git@github.com:vliz-be-opsci/py-sync-fs-triples.git"
+repository = "https://github.com/vliz-be-opsci/py-sync-fs-triples.git"
 classifiers = [
     # Trove classifiers
     # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -18,7 +18,7 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.9,<4.0.0"
 poetry = "^1.5.0"
 
 # Development tools
@@ -39,6 +39,34 @@ sphinx = {version = "^7.0.1", optional = true}
 
 # Poetry has the dependecies groups, but those are not 
 #   compatible with extras, widely used in the python-verse.
+pyrdfstore = {git = "https://github.com/vliz-be-opsci/py-RDF-store.git", rev = "fix/issue32"}
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "*"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+poetry = "*"
+isort = "*"
+black = "*"
+flake8 = "*"
+
+[tool.poetry.group.tests]
+optional = true
+
+[tool.poetry.group.tests.dependencies]
+pyyaml = "*" 
+pytest = "*" 
+coverage = "*" 
+python-dotenv = "*" 
+pytest-cov = "*" 
+
+
 [tool.poetry.extras]
 dev = ["pre-commit", "isort", "black", "flake8"]
 tests = ["pyyaml","pytest", "coverage", "python-dotenv", "pytest-cov"]

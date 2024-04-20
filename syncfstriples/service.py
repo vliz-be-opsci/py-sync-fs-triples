@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Dict, Iterable
 from urllib.parse import quote, unquote
 
-from pyrdfstore import create_rdf_store
-from pyrdfstore.store import RDFStore
+from pyrdfstore import create_rdf_store, RDFStore, GraphNameMapper
 from rdflib import Graph
 
 log = getLogger(__name__)
@@ -20,56 +19,6 @@ SUFFIX_TO_FORMAT = {
 }
 SUPPORTED_RDF_DUMP_SUFFIXES = [sfx for sfx in SUFFIX_TO_FORMAT]
 DEFAULT_URN_BASE = "urn:sync:"
-
-
-class GraphFileNameMapper:
-    """Helper class to convert filenames into graph-names."""
-
-    def __init__(self, base: str = DEFAULT_URN_BASE) -> None:
-        """constructor
-
-        :param base: base_uri to apply, defaults to DEFAULT_URN_BASE = 'urn:sync:'
-        :type base: str
-        """
-        self._base = str(base)
-
-    def fname_to_ng(self, fname: str) -> str:
-        """converts local filename to a named_graph
-
-        :param fname: local file-name
-        :type fname: str
-        :returns: urn representing the filename to be used as named-graph
-        :rtype: str
-        """
-        return f"{self._base}{quote(fname)}"
-
-    def ng_to_fname(self, ng: str) -> str:
-        """converts named_graph urn back into local filename
-
-        :param fname: local file-name
-        :type fname: str
-        :returns: urn representing the filename to be used as named-graph
-        :rtype: str
-        """
-        assert ng.startswith(self._base), (
-            f"Unknown {ng=}. " f"It should start with {self._base=}"
-        )
-        return unquote(ng[len(self._base) :])
-
-    def get_fnames_in_store(self, store: RDFStore) -> Iterable[str]:
-        """selects those named graphs in the store.named_graphs under our base
-        and converts them into filenames
-
-        :param store: the store to grab & filter the named_graphs from
-        :type store: RDFStore
-        :returns: list of filenames in that store, based on the found
-        :rtype: List[str]
-        """
-        return [
-            self.ng_to_fname(ng)
-            for ng in store.named_graphs
-            if ng.startswith(self._base)
-        ]  # filter and convert the named_graphs to file_names we handle
 
 
 def get_lastmod_by_fname(from_path: Path) -> Dict[str, datetime]:
@@ -119,9 +68,7 @@ def relative_pathname(subpath: Path, ancestorpath: Path) -> str:
     return str(subpath.absolute().relative_to(ancestorpath.absolute()))
 
 
-def sync_removal(
-    store: RDFStore, fpath: Path, rootpath: Path, nmapper: GraphFileNameMapper
-) -> None:
+def sync_removal(store: RDFStore, fpath: Path, rootpath: Path) -> None:
     """Handles removal event triggered when file on disk got removed.
     (i.e. has a matching graph in store, but no longer exists).
     Resolution should ensure removal of the matching graph in the store
@@ -136,14 +83,12 @@ def sync_removal(
     :type nmapper: GraphFileNameMapper
     :rtype: None
     """
-    ng = nmapper.fname_to_ng(relative_pathname(fpath, rootpath))
-    store.drop_graph(ng)
-    store.forget_graph(ng)
+    key: str = relative_pathname(fpath, rootpath)
+    store.drop_graph_for_key(key)
+    store.forget_graph(key)
 
 
-def sync_addition(
-    store: RDFStore, fpath: Path, rootpath: Path, nmapper: GraphFileNameMapper
-) -> None:
+def sync_addition(store: RDFStore, fpath: Path, rootpath: Path) -> None:
     """Handles addition event triggered when a new file on disk appeared.
     (i.e. has not yet a matching graph in store).
     Resolution should ensure addition of the matching graph in the store
@@ -158,14 +103,12 @@ def sync_addition(
     :type nmapper: GraphFileNameMapper
     :rtype: None
     """
-    ng = nmapper.fname_to_ng(relative_pathname(fpath, rootpath))
-    g = load_graph_fpath(fpath)
-    store.insert(g, ng)
+    key: str = relative_pathname(fpath, rootpath)
+    g: Graph = load_graph_fpath(fpath)
+    store.insert_for_key(g, key)
 
 
-def sync_update(
-    store: RDFStore, fpath: Path, rootpath: Path, nmapper: GraphFileNameMapper
-) -> None:
+def sync_update(store: RDFStore, fpath: Path, rootpath: Path) -> None:
     """Handles update event triggered when a file on disk was changed
     (i.e. has a more recent lastmod then matching graph in store).
     Resolution should ensure addition of the matching graph in the store
@@ -180,15 +123,13 @@ def sync_update(
     :type nmapper: GraphFileNameMapper
     :rtype: None
     """
-    ng = nmapper.fname_to_ng(relative_pathname(fpath, rootpath))
-    store.drop_graph(ng)
-    g = load_graph_fpath(fpath)
-    store.insert(g, ng)
+    key: str = relative_pathname(fpath, rootpath)
+    store.drop_graph_for_key(key)
+    g: Graph = load_graph_fpath(fpath)
+    store.insert_for_key(g, key)
 
 
-def perform_sync(
-    from_path: Path, to_store: RDFStore, nmapper: GraphFileNameMapper
-) -> None:
+def perform_sync(from_path: Path, to_store: RDFStore) -> None:
     """synchronizes found rdf-dump files in the from_path to the RDFStore specified
 
     :param from_path: folder path to sync from
@@ -199,28 +140,28 @@ def perform_sync(
     :type nmapper: GraphFileNameMapper
     :rtype: None
     """
-    known_relnames_in_store = nmapper.get_fnames_in_store(to_store)
+    known_relnames_in_store = to_store.keys
     current_lastmod_by_fname = get_lastmod_by_fname(from_path)
     log.debug(f"current_lastmod_by_fname: {current_lastmod_by_fname}")
     for relname in known_relnames_in_store:
         fname = str(from_path / relname)
         if fname not in current_lastmod_by_fname:
             log.debug(f"old file {fname} no longer exists")
-            sync_removal(to_store, Path(fname), from_path, nmapper)
+            sync_removal(to_store, Path(fname), from_path)
     for fname, lastmod in current_lastmod_by_fname.items():
         relname = relative_pathname(Path(fname), from_path)
+        key: str = relname
         if relname not in known_relnames_in_store:
             log.debug(f"new file {fname} with lastmod {lastmod}")
-            sync_addition(to_store, Path(fname), from_path, nmapper)
+            sync_addition(to_store, Path(fname), from_path)
         else:
-            ng = nmapper.fname_to_ng(relname)
-            known_lastmod = to_store.lastmod_ts(ng).astimezone(UTC_tz)
+            known_lastmod = to_store.lastmod_ts_for_key(key).astimezone(UTC_tz)
             log.debug(
                 f"known file {relname} - check file {lastmod} >= {known_lastmod}"
             )
             if lastmod >= known_lastmod:
                 log.debug(f"updated file {fname} with lastmod {lastmod}")
-                sync_update(to_store, Path(fname), from_path, nmapper)
+                sync_update(to_store, Path(fname), from_path)
             else:
                 log.debug(
                     f"skip file {fname} with lastmod {lastmod} - unchanged"
@@ -258,8 +199,8 @@ class SyncFsTriples:
         assert self.source_path.is_dir(), (
             "source-path " + str(root) + " should be a folder."
         )
-        self.nmapper = GraphFileNameMapper(base=named_graph_base)
-        self.rdfstore: RDFStore = create_rdf_store(read_uri, write_uri)
+        nmapper: GraphNameMapper = GraphNameMapper(base=named_graph_base)
+        self.rdfstore: RDFStore = create_rdf_store(read_uri, write_uri, nmapper=nmapper)
 
     def process(self) -> None:
         """executes the SyncFs command"""

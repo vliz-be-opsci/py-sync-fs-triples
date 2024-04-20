@@ -200,7 +200,7 @@ class SyncFsTriples:
             "source-path " + str(root) + " should be a folder."
         )
         nmapper: GraphNameMapper = GraphNameMapper(base=named_graph_base)
-        self.rdfstore: RDFStore = create_rdf_store(read_uri, write_uri, nmapper=nmapper)
+        self.rdfstore: RDFStore = RDFStore(read_uri, write_uri, mapper=nmapper)
 
     def process(self) -> None:
         """executes the SyncFs command"""

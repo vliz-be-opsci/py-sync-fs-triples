@@ -1,10 +1,9 @@
 from datetime import datetime, timezone
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, Iterable
-from urllib.parse import quote, unquote
+from typing import Dict
 
-from pyrdfstore import create_rdf_store, RDFStore, GraphNameMapper
+from pyrdfstore import GraphNameMapper, RDFStore
 from rdflib import Graph
 
 log = getLogger(__name__)

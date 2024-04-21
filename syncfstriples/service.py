@@ -3,7 +3,12 @@ from logging import getLogger
 from pathlib import Path
 from typing import Dict
 
-from pyrdfstore import GraphNameMapper, RDFStore
+from pyrdfstore.store import (
+    GraphNameMapper,
+    MemoryRDFStore,
+    RDFStore,
+    URIRDFStore,
+)
 from rdflib import Graph
 
 log = getLogger(__name__)
@@ -84,7 +89,7 @@ def sync_removal(store: RDFStore, fpath: Path, rootpath: Path) -> None:
     """
     key: str = relative_pathname(fpath, rootpath)
     store.drop_graph_for_key(key)
-    store.forget_graph(key)
+    store.forget_graph_for_key(key)
 
 
 def sync_addition(store: RDFStore, fpath: Path, rootpath: Path) -> None:
@@ -149,22 +154,16 @@ def perform_sync(from_path: Path, to_store: RDFStore) -> None:
             sync_removal(to_store, Path(fname), from_path)
     for fname, lastmod in current_lastmod_by_fname.items():
         relname = relative_pathname(Path(fname), from_path)
-        key: str = relname
         if relname not in known_relnames_in_store:
             log.debug(f"new file {fname} with lastmod {lastmod}")
             sync_addition(to_store, Path(fname), from_path)
+        elif not to_store.verify_max_age_of_key(
+            relname, reference_time=lastmod
+        ):
+            log.debug(f"updated file {fname} with lastmod {lastmod}")
+            sync_update(to_store, Path(fname), from_path)
         else:
-            known_lastmod = to_store.lastmod_ts_for_key(key).astimezone(UTC_tz)
-            log.debug(
-                f"known file {relname} - check file {lastmod} >= {known_lastmod}"
-            )
-            if lastmod >= known_lastmod:
-                log.debug(f"updated file {fname} with lastmod {lastmod}")
-                sync_update(to_store, Path(fname), from_path)
-            else:
-                log.debug(
-                    f"skip file {fname} with lastmod {lastmod} - unchanged"
-                )
+            log.debug(f"skip file {fname} with lastmod {lastmod} - unchanged")
 
 
 class SyncFsTriples:
@@ -199,12 +198,15 @@ class SyncFsTriples:
             "source-path " + str(root) + " should be a folder."
         )
         nmapper: GraphNameMapper = GraphNameMapper(base=named_graph_base)
-        self.rdfstore: RDFStore = RDFStore(read_uri, write_uri, mapper=nmapper)
+        self.rdfstore: RDFStore = None
+        if not read_uri:
+            self.rdfstore = MemoryRDFStore(mapper=nmapper)
+        else:
+            self.rdfstore = URIRDFStore(read_uri, write_uri, mapper=nmapper)
 
     def process(self) -> None:
         """executes the SyncFs command"""
         perform_sync(
             from_path=self.source_path,
             to_store=self.rdfstore,
-            nmapper=self.nmapper,
         )

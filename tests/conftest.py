@@ -2,9 +2,15 @@ import os
 import shutil
 from pathlib import Path
 from typing import Iterable, Optional
+from uuid import uuid4
 
 import pytest
-from pyrdfstore import RDFStore, create_rdf_store
+from pyrdfstore.store import (
+    GraphNameMapper,
+    MemoryRDFStore,
+    RDFStore,
+    URIRDFStore,
+)
 from rdflib import BNode, Graph, URIRef
 from util4tests import enable_test_logging, log
 
@@ -16,17 +22,27 @@ TEST_SYNC_FOLDER = TEST_FOLDER / "__sync__"
 enable_test_logging()  # note that this includes loading .env into os.getenv
 
 
-@pytest.fixture(scope="session")
-def _mem_rdf_store() -> RDFStore:
+@pytest.fixture()
+def base() -> str:
+    return f"urn:test-sync:{uuid4()}:"
+
+
+@pytest.fixture()
+def nmapper(base: str) -> GraphNameMapper:
+    return GraphNameMapper(base=base)
+
+
+@pytest.fixture()
+def _mem_rdf_store(nmapper: GraphNameMapper) -> RDFStore:
     """in memory store
     uses simple dict of Graph
     """
     log.debug("creating in memory rdf store")
-    return create_rdf_store()
+    return MemoryRDFStore(mapper=nmapper)
 
 
-@pytest.fixture(scope="session")
-def _uri_rdf_store() -> RDFStore:
+@pytest.fixture()
+def _uri_rdf_store(nmapper: GraphNameMapper) -> RDFStore:
     """proxy to available graphdb store
     But only if environment variables are set and service is available
     else None (which will result in trimming it from rdf_stores fixture)
@@ -39,7 +55,7 @@ def _uri_rdf_store() -> RDFStore:
         return None
     # else -- all is well
     log.debug(f"creating uri rdf store proxy to ({read_uri=}, {write_uri=})")
-    return create_rdf_store(read_uri, write_uri)
+    return URIRDFStore(read_uri, write_uri, mapper=nmapper)
 
 
 @pytest.fixture()

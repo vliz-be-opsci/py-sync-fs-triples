@@ -3,25 +3,20 @@
 tests concerning the actual core sync expectations
 """
 import random
-from uuid import uuid4
 
 import pytest
 from conftest import make_sample_graph
 from util4tests import log, run_single_test
 
 from syncfstriples.service import (
-    GraphFileNameMapper,
     format_from_filepath,
     perform_sync,
     relative_pathname,
 )
 
 
-@pytest.mark.usefixtures("rdf_stores", "syncfolders")
-def test_perform_sync(rdf_stores, syncfolders):
-    base = f"urn:test-sync:{uuid4()}:"
-    nmapper: GraphFileNameMapper = GraphFileNameMapper(base)
-
+@pytest.mark.usefixtures("base", "nmapper", "rdf_stores", "syncfolders")
+def test_perform_sync(base, nmapper, rdf_stores, syncfolders):
     def inbase(ng):
         return ng.startswith(base)
 
@@ -31,21 +26,23 @@ def test_perform_sync(rdf_stores, syncfolders):
     num = len(extensions)
     assert num >= 2
     graphsize = 5
-    graphs = [
-        make_sample_graph(range(i * 10, i * 10 + graphsize))
-        for i in range(1, 1 + num)
-    ]
     sparql = "select * where {?s ?p ?o .}"
 
     for rdf_store, syncpath in zip(rdf_stores, syncfolders):
         rdf_store_type: str = type(rdf_store).__name__
+        assert nmapper == rdf_store._nmapper
+        # note since we manipulate these along the way, we need them freshly made per rdf_store
+        graphs = [
+            make_sample_graph(range(i * 10, i * 10 + graphsize))
+            for i in range(1, 1 + num)
+        ]
         # 0. nothing there at the start
-        assert len(nmapper.get_fnames_in_store(rdf_store)) == 0
+        assert len(rdf_store.keys) == 0
         # now sync an empty folder
         log.debug(f"{rdf_store_type} :: sync empty folder")
-        perform_sync(syncpath, rdf_store, nmapper)
+        perform_sync(syncpath, rdf_store)
         # still nothing
-        assert len(nmapper.get_fnames_in_store(rdf_store)) == 0
+        assert len(rdf_store.keys) == 0
 
         # 1. check addition -- so create some files
         relfpaths = list()
@@ -58,18 +55,19 @@ def test_perform_sync(rdf_stores, syncfolders):
             relfpaths.append(relative_pathname(fpath, syncpath))
         # now sync again
         log.debug(f"{rdf_store_type} :: sync folder with test-content")
-        perform_sync(syncpath, rdf_store, nmapper)
+        perform_sync(syncpath, rdf_store)
+        log.debug(f"{rdf_store_type} :: after first sync {rdf_store.keys=}")
         # now stuff should be in store
-        fnames_in_store = nmapper.get_fnames_in_store(rdf_store)
+        fnames_in_store = rdf_store.keys
         assert len(fnames_in_store) == num
         log.debug(f"{rdf_store_type} :: {fnames_in_store=}")
         # the present graphs should match in both fname or ng format
         assert set(fnames_in_store) == set(relfpaths)
-        ngs = [nmapper.fname_to_ng(fname) for fname in relfpaths]
+        ngs = [nmapper.key_to_ng(fname) for fname in relfpaths]
         assert set(filter(inbase, rdf_store.named_graphs)) == set(ngs)
         # and we should be able to select and find those triples too
         for fname in relfpaths:
-            ng = nmapper.fname_to_ng(fname)
+            ng = nmapper.key_to_ng(fname)
             result = rdf_store.select(sparql, named_graph=ng)
             assert len(result) == graphsize
 
@@ -79,15 +77,29 @@ def test_perform_sync(rdf_stores, syncfolders):
         log.debug(f"removing file {rm_fpath=}")
         rm_fpath.unlink()
         # also grab the change-time on the first
-        first_ng = nmapper.fname_to_ng(relfpaths[0])
+        first_ng = nmapper.key_to_ng(relfpaths[0])
         first_store_lastmod = rdf_store.lastmod_ts(first_ng)
+        log.debug(
+            f"{rdf_store_type} :: "
+            f"lastmod at key {relfpaths[0]} leads to ng {first_ng} "
+            f"that has lastmod={first_store_lastmod}"
+        )
         # now sync again
         log.debug(f"{rdf_store_type} :: sync folder after file delete")
-        perform_sync(syncpath, rdf_store, nmapper)
+        perform_sync(syncpath, rdf_store)
+        log.debug(
+            f"{rdf_store_type} :: after sync after delete {rdf_store.keys =}"
+        )
         # there should be one less in store
-        fnames_in_store = nmapper.get_fnames_in_store(rdf_store)
+        fnames_in_store = rdf_store.keys
         assert len(fnames_in_store) == num - 1
         # the other one should not have been changed
+        log.debug(
+            f"{rdf_store_type} :: "
+            f"lastmod at key {relfpaths[0]} leads to ng {first_ng} "
+            f"that used to have lastmod={first_store_lastmod} "
+            f"and now has lastmod={rdf_store.lastmod_ts(first_ng)} "
+        )
         assert rdf_store.lastmod_ts(first_ng) == first_store_lastmod
 
         # 3. check update -- so add the triples from the last to the first
@@ -102,9 +114,12 @@ def test_perform_sync(rdf_stores, syncfolders):
         )
         # then resync
         log.debug(f"{rdf_store_type} :: sync folder after file update")
-        perform_sync(syncpath, rdf_store, nmapper)
+        perform_sync(syncpath, rdf_store)
+        log.debug(
+            f"{rdf_store_type} :: after sync after update {rdf_store.keys =}"
+        )
         # still same amount of files in store
-        fnames_in_store = nmapper.get_fnames_in_store(rdf_store)
+        fnames_in_store = rdf_store.keys
         assert len(fnames_in_store) == num - 1
         # but the first should have been updated
         assert rdf_store.lastmod_ts(first_ng) > first_store_lastmod

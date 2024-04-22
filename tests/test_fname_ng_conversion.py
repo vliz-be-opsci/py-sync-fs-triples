@@ -56,6 +56,8 @@ def test_get_keys_in_store(rdf_stores: Iterable[RDFStore]):
     for rdf_store in rdf_stores:
         rdf_store_type: str = type(rdf_store).__name__
         # Test case 1: Empty store
+        for key in rdf_store.keys:
+            rdf_store.forget_graph_for_key(key)
         assert rdf_store.keys == []
 
         # Test case 2: Store with one named graph

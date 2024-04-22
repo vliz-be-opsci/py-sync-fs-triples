@@ -1427,8 +1427,8 @@ validators = "^0.22.0"
 [package.source]
 type = "git"
 url = "https://github.com/vliz-be-opsci/py-RDF-store.git"
-reference = "fix/issue-51"
-resolved_reference = "10c9ea98bca4f6aa91ec113151990599170f8b2d"
+reference = "main"
+resolved_reference = "5de2f90d04a30a7abd9df20f6a996e44c868a2cc"
 
 [[package]]
 name = "pytest"
@@ -2209,4 +2209,4 @@ tests = ["pyyaml", "pytest", "coverage", "python-dotenv", "pytest-cov"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0.0"
-content-hash = "10d7e16e3f19466290afb71a627e878beae1661fe024dc4dda0cedd3b1f78ac5"
+content-hash = "be18005b73d3c3426624978841ac9de16a4082c553f2495e27224ecfb065c85d"

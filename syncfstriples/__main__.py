@@ -79,7 +79,6 @@ def make_service(args) -> SyncFsTriples:
     root = args.root
     base = args.base
     log.debug(f"make service with {root=}, {base=}, {store_info=}")
-    log.debug(f"make service with {root=}, {base=}, {store_info=}")
     service: SyncFsTriples = SyncFsTriples(root, base, *store_info)
     log.debug(f"target store type {type(service.rdfstore).__name__}")
     return service

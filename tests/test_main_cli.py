@@ -14,6 +14,7 @@ from syncfstriples.__main__ import main
 
 @pytest.mark.usefixtures("store_builds", "syncfolders")
 def test_main(store_builds: tuple, syncfolders: tuple):
+    log.info(f"test_main ({len(store_builds)})")
     base: str = f"urn:sync:test-main:{uuid4()}:"
     for store_build, syncpath in zip(store_builds, syncfolders):
         root_path = syncpath / "input"
@@ -29,6 +30,14 @@ def test_main(store_builds: tuple, syncfolders: tuple):
         main(*args_list)  # pass as individual arguments
 
         # TODO consider some extra assertions on the result
+
+
+def test_main_logconf():
+    log.info("test_main_logconf")
+    with pytest.raises(FileNotFoundError):
+        argsline: str = "--root /tmp --logconf unexisting.yml"
+        args_list: list = argsline.split(" ")
+        main(*args_list)  # pass as individual arguments
 
 
 if __name__ == "__main__":

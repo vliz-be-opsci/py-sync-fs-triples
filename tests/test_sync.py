@@ -17,6 +17,8 @@ from syncfstriples.service import (
 
 @pytest.mark.usefixtures("base", "nmapper", "rdf_stores", "syncfolders")
 def test_perform_sync(base, nmapper, rdf_stores, syncfolders):
+    log.info(f"test_perform_sync ({len(syncfolders)})")
+
     def inbase(ng):
         return ng.startswith(base)
 

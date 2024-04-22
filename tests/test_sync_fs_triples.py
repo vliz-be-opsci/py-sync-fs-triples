@@ -13,6 +13,7 @@ from syncfstriples import SyncFsTriples
 
 @pytest.mark.usefixtures("store_builds", "syncfolders")
 def test_service_wrapper(store_builds, syncfolders):
+    log.info(f"test_service_wrapper ({len(store_builds)})")
     base = "urn:sync:via-wrapper:"
     log.debug(f"{base=}")
 

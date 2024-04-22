@@ -12,7 +12,8 @@ from util4tests import log, run_single_test
 from syncfstriples.service import GraphNameMapper, sync_addition
 
 
-def test_fname_to_ng():
+def test_key_to_ng():
+    log.info("test_key_to_ng")
     base: str = "urn:sync:"
     nmapper: GraphNameMapper = GraphNameMapper(base=base)
 
@@ -34,7 +35,8 @@ def test_fname_to_ng():
     # Add more test cases as needed
 
 
-def test_ng_to_fname():
+def test_ng_to_key():
+    log.info("test_ng_to_key")
     base: str = "urn:sync:"
     nmapper: GraphNameMapper = GraphNameMapper(base=base)
 
@@ -53,6 +55,7 @@ def test_ng_to_fname():
 
 @pytest.mark.usefixtures("rdf_stores")
 def test_get_keys_in_store(rdf_stores: Iterable[RDFStore]):
+    log.info(f"test_get_keys_in_store ({len(list(rdf_stores))})")
     for rdf_store in rdf_stores:
         rdf_store_type: str = type(rdf_store).__name__
         # Test case 1: Empty store

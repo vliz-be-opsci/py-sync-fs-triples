@@ -54,7 +54,7 @@ def _uri_store_build():
         return URIRDFStore(read_uri, write_uri, cleaner=cleaner, mapper=mapper)
 
     fn.store_type = URIRDFStore
-    fn.store_info = tuple(read_uri, write_uri)
+    fn.store_info = tuple((read_uri, write_uri))
     return fn
 
 
@@ -67,9 +67,9 @@ def store_builds(_mem_store_build, _uri_store_build):
     )
 
 
-@pytest.fixture(scope="session")
-def rdf_stores(store_builds):
-    return (storebuild() for storebuild in store_builds)
+@pytest.fixture()
+def rdf_stores(store_builds, nmapper):
+    return [storebuild(mapper=nmapper) for storebuild in store_builds]
 
 
 @pytest.fixture()

@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Iterable, Optional, Callable
+from typing import Callable, Iterable, Optional
 from uuid import uuid4
 
 import pytest
@@ -36,6 +36,7 @@ def nmapper(base: str) -> GraphNameMapper:
 def _mem_store_build():
     def fn(*, cleaner: Callable = None, mapper: GraphNameMapper = None):
         return MemoryRDFStore(cleaner=cleaner, mapper=mapper)
+
     fn.store_type = MemoryRDFStore
     fn.store_info = ()
     return fn
@@ -51,8 +52,9 @@ def _uri_store_build():
 
     def fn(*, cleaner: Callable = None, mapper: GraphNameMapper = None):
         return URIRDFStore(read_uri, write_uri, cleaner=cleaner, mapper=mapper)
+
     fn.store_type = URIRDFStore
-    fn.store_info = (read_uri, write_uri,)
+    fn.store_info = tuple(read_uri, write_uri)
     return fn
 
 

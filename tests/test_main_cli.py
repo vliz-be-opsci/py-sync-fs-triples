@@ -2,27 +2,23 @@
 """ test_main_cli
 tests concerning the cli call functioning
 """
-import pytest
 import shutil
+from uuid import uuid4
+
+import pytest
 from conftest import TEST_INPUT_FOLDER
 from util4tests import log, run_single_test
-from uuid import uuid4
 
 from syncfstriples.__main__ import main
 
 
 @pytest.mark.usefixtures("store_builds", "syncfolders")
 def test_main(store_builds: tuple, syncfolders: tuple):
-
     base: str = f"urn:sync:test-main:{uuid4()}:"
     for store_build, syncpath in zip(store_builds, syncfolders):
         root_path = syncpath / "input"
-        shutil.copytree(
-            TEST_INPUT_FOLDER, root_path, dirs_exist_ok=True
-        )
-        argsline: str = (
-            f"--root {str(root_path)} --base {base}"
-        )
+        shutil.copytree(TEST_INPUT_FOLDER, root_path, dirs_exist_ok=True)
+        argsline: str = f"--root {str(root_path)} --base {base}"
         store_info: tuple = store_build.store_info
         store_part = " ".join(store_info)
         if (len(store_part)) > 0:

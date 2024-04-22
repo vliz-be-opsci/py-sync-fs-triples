@@ -1,52 +1,55 @@
 import sys
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, Namespace
-from logging import getLogger, Logger
+from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser, Namespace
+from logging import Logger, getLogger
 from logging.config import dictConfig
-from syncfstriples.service import DEFAULT_URN_BASE, SyncFsTriples
 from pathlib import Path
 
+from syncfstriples.service import DEFAULT_URN_BASE, SyncFsTriples
 
 log: Logger = getLogger(__name__)
 
 
 def get_arg_parser():
-    """ Defines the arguments to this module's __main__ cli script
+    """Defines the arguments to this module's __main__ cli script
     by using Python's [argparse](https://docs.python.org/3/library/argparse.html)
     """
     ap = ArgumentParser(
-        prog='syncfs',
-        description='CLI for main action in pysyncfstriples',
+        prog="syncfs",
+        description="CLI for main action in pysyncfstriples",
         formatter_class=ArgumentDefaultsHelpFormatter,
     )
     ap.add_argument(
-        '-l', '--logconf',
+        "-l",
+        "--logconf",
         metavar="LOGCONF_FILE.yml",
         type=str,
-        action='store',
-        help='The config file for the Logging in yml format',
+        action="store",
+        help="The config file for the Logging in yml format",
     )
     ap.add_argument(
-        "-r", "--root",
+        "-r",
+        "--root",
         metavar="ROOT_FOLDER/",
         type=str,
         action="store",
         required=True,
-        help="The path to the root folder containing the files to be synchronized."
+        help="The path to the root folder containing the files to be synchronized.",
     )
     ap.add_argument(
-        "-b", "--base",
+        "-b",
+        "--base",
         metavar="BASE",
         type=str,
         action="store",
         required=False,
         default=DEFAULT_URN_BASE,
-        help="The uri baseref (prefix) for the associated named-graphs of synced files."
+        help="The uri baseref (prefix) for the associated named-graphs of synced files.",
     )
     ap.add_argument(
         "-s",
         "--store",
         metavar="ENDPOINT",
-        nargs='+',
+        nargs="+",
         action="store",
         required=False,
         help=(

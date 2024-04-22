@@ -1,7 +1,7 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable
 from uuid import uuid4
 
 import pytest
@@ -32,43 +32,63 @@ def nmapper(base: str) -> GraphNameMapper:
     return GraphNameMapper(base=base)
 
 
+@pytest.fixture(scope="session")
+def _mem_store_build():
+    def fn(*, cleaner: Callable = None, mapper: GraphNameMapper = None):
+        return MemoryRDFStore(cleaner=cleaner, mapper=mapper)
+    fn.store_type = MemoryRDFStore
+    fn.store_info = ()
+    return fn
+
+
+@pytest.fixture(scope="session")
+def _uri_store_build():
+    read_uri: str = os.getenv("TEST_SPARQL_READ_URI", None)
+    write_uri: str = os.getenv("TEST_SPARQL_WRITE_URI", read_uri)
+    if read_uri is None or write_uri is None:
+        return None
+    # else
+
+    def fn(*, cleaner: Callable = None, mapper: GraphNameMapper = None):
+        return URIRDFStore(read_uri, write_uri, cleaner=cleaner, mapper=mapper)
+    fn.store_type = URIRDFStore
+    fn.store_info = (read_uri, write_uri,)
+    return fn
+
+
+@pytest.fixture(scope="session")
+def store_builds(_mem_store_build, _uri_store_build):
+    return tuple(
+        storeinfo
+        for storeinfo in (_mem_store_build, _uri_store_build)
+        if storeinfo is not None
+    )
+
+
+@pytest.fixture(scope="session")
+def rdf_stores(store_builds):
+    return (storebuild() for storebuild in store_builds)
+
+
 @pytest.fixture()
-def _mem_rdf_store(nmapper: GraphNameMapper) -> RDFStore:
+def _mem_rdf_store(_mem_store_build, nmapper: GraphNameMapper) -> RDFStore:
     """in memory store
     uses simple dict of Graph
     """
     log.debug("creating in memory rdf store")
-    return MemoryRDFStore(mapper=nmapper)
+    return _mem_store_build(mapper=nmapper)
 
 
 @pytest.fixture()
-def _uri_rdf_store(nmapper: GraphNameMapper) -> RDFStore:
+def _uri_rdf_store(_uri_store_build, nmapper: GraphNameMapper) -> RDFStore:
     """proxy to available graphdb store
     But only if environment variables are set and service is available
     else None (which will result in trimming it from rdf_stores fixture)
     """
-    read_uri = os.getenv("TEST_SPARQL_READ_URI", None)
-    write_uri = os.getenv("TEST_SPARQL_WRITE_URI", read_uri)
-    # if no URI provided - skip this by returning None
-    if read_uri is None or write_uri is None:
-        log.debug("not creating uri rdf store in test - no uri provided")
+    if _uri_store_build is None:
         return None
-    # else -- all is well
-    log.debug(f"creating uri rdf store proxy to ({read_uri=}, {write_uri=})")
-    return URIRDFStore(read_uri, write_uri, mapper=nmapper)
-
-
-@pytest.fixture()
-def rdf_stores(_mem_rdf_store, _uri_rdf_store) -> Iterable[RDFStore]:
-    """trimmed list of available stores to be tested
-    result should contain at least memory_rdf_store, and (if available) also include uri_rdf_store
-    """
-    stores = tuple(
-        store
-        for store in (_mem_rdf_store, _uri_rdf_store)
-        if store is not None
-    )
-    return stores
+    # else
+    return _uri_store_build(mapper=nmapper)
 
 
 def make_sample_graph(
@@ -111,13 +131,12 @@ def make_sample_graph(
 
 
 @pytest.fixture(scope="function")  # a fresh folder per store for each test
-def syncfolders(rdf_stores) -> Iterable[Path]:
+def syncfolders(store_builds) -> Iterable[Path]:
     mainpath = TEST_SYNC_FOLDER
     syncpathperstore = list()
-    for rdf_store in rdf_stores:
-        rdf_store_type: str = type(rdf_store).__name__
-        num = len(syncpathperstore) + 1
-        syncpathname: str = f"sync-{num:02d}-{rdf_store_type}"
+    for n, store_build in enumerate(store_builds):
+        rdf_store_type: str = store_build.store_type.__name__
+        syncpathname: str = f"sync-{n+1:02d}-{rdf_store_type}"
         syncpath: Path = mainpath / syncpathname
         shutil.rmtree(str(syncpath), ignore_errors=True)  # force remove it
         syncpath.mkdir(parents=True, exist_ok=True)  # create it afresh

@@ -85,7 +85,7 @@ def make_service(args) -> SyncFsTriples:
 def main(*cli_args):
     # parse cli args
     print(f"cli_args = {cli_args}")
-    args: Namespace = get_arg_parser().parse_args(*cli_args)
+    args: Namespace = get_arg_parser().parse_args(cli_args)
     # enable logging
     enable_logging(args)
     log.debug(f"cli called with {args=}")
@@ -98,4 +98,4 @@ def main(*cli_args):
 if __name__ == "__main__":
     # getting the cli_args here and passing them to main
     # this make the main() testable without shell subprocess
-    main(sys.argv[1:])
+    main(*sys.argv[1:])

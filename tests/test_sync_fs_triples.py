@@ -2,35 +2,30 @@
 """ test_sync_fs_triples
 tests concerning the service wrapper for sembench "SyncFsTriples"
 """
-import os
 import shutil
 
 import pytest
 from conftest import TEST_INPUT_FOLDER
-from pyrdfstore.store import URIRDFStore
 from util4tests import log, run_single_test
 
 from syncfstriples import SyncFsTriples
 
 
-@pytest.mark.usefixtures("rdf_stores", "syncfolders")
-def test_service_wrapper(rdf_stores, syncfolders):
+@pytest.mark.usefixtures("store_builds", "syncfolders")
+def test_service_wrapper(store_builds, syncfolders):
     base = "urn:sync:via-wrapper:"
     log.debug(f"{base=}")
 
     def inbase(ng):
         return ng.startswith(base)
 
-    for rdf_store, syncpath in zip(rdf_stores, syncfolders):
-        read_uri, write_uri = None, None
-        if isinstance(rdf_store, URIRDFStore):
-            read_uri = os.getenv("TEST_SPARQL_READ_URI", None)
-            write_uri = os.getenv("TEST_SPARQL_WRITE_URI", read_uri)
+    for store_build, syncpath in zip(store_builds, syncfolders):
         sft: SyncFsTriples = SyncFsTriples(
-            str(syncpath), base, read_uri, write_uri
+            str(syncpath), base, *store_build.store_info
         )
 
-        # new instances are created inside the service wrapper, the fixtures are ignored!
+        # new instances are created inside the service wrapper,
+        # no need to use the builder methods from the fixture
         rdf_store = sft.rdfstore
 
         sft.process()
